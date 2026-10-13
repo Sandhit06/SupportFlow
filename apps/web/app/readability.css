@@ -1,0 +1,142 @@
+/* Keep the quiet visual hierarchy readable on real laptop and phone displays. */
+.sidebar {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.sidebar > * {
+  flex-shrink: 0;
+}
+.nav-item {
+  font-size: 13px;
+}
+.page-heading p {
+  font-size: 13px;
+}
+.conversation-preview strong,
+.thread-header h2 {
+  font-size: 13px;
+}
+.conversation-preview p,
+.subject,
+.search-field input {
+  font-size: 12px;
+}
+.message-bubble {
+  font-size: 13px;
+  color: #626675;
+}
+.message-author {
+  font-size: 11px;
+}
+.message-author time,
+.message-source {
+  font-size: 10px;
+}
+.message-row:has(.ai-avatar) .message-bubble {
+  color: #756386;
+}
+.composer textarea {
+  font-size: 13px;
+}
+.composer-tabs button,
+.composer-bottom .button,
+.ai-banner strong {
+  font-size: 11px;
+}
+.ai-banner div > span {
+  font-size: 10px;
+  color: #84778f;
+}
+.summary-strip small {
+  font-size: 11px;
+}
+.summary-strip strong span {
+  font-size: 10px;
+}
+.tiny-tag {
+  font-size: 9px;
+}
+.customer-profile > span:not(.large-avatar):not(.pill),
+dl > div,
+.knowledge-link {
+  font-size: 11px;
+}
+.article-card p,
+.tools-card p,
+.approval-card > p {
+  font-size: 13px;
+}
+.profile strong,
+.organization-switch strong {
+  font-size: 12px;
+}
+.topbar {
+  position: relative;
+}
+[data-theme="dark"] .app-shell {
+  background:
+    radial-gradient(ellipse at 15% 0%, #4e3b6920, transparent 45%), var(--bg);
+}
+[data-theme="dark"] .topbar {
+  border-color: var(--line);
+}
+[data-theme="dark"] .ai-banner div > span {
+  color: #b2a3c2;
+}
+[data-theme="dark"] .ai-banner strong {
+  color: #c3afd7;
+}
+[data-theme="dark"] .resolve {
+  background: #2e3d35;
+  border-color: #3d5245;
+  color: #b1cfbc;
+}
+[data-theme="dark"] .assistant-card button {
+  border-color: var(--line);
+}
+@media (max-width: 960px) {
+  .summary-strip small {
+    font-size: 10px;
+  }
+  .conversation-preview p,
+  .subject {
+    font-size: 11px;
+  }
+}
+@media (max-height: 900px) {
+  .assistant-card {
+    display: none;
+  }
+  .sidebar-bottom {
+    padding-top: 10px;
+  }
+  .sidebar {
+    padding-top: 20px;
+  }
+}
+@media (max-width: 560px) {
+  .page-heading p {
+    font-size: 11px;
+  }
+  .ai-banner div > span {
+    font-size: 9px;
+  }
+  .ai-banner strong {
+    font-size: 10px;
+  }
+  .message-source {
+    font-size: 8px;
+  }
+  .summary-strip small {
+    font-size: 9px;
+  }
+}
+@media (prefers-contrast: more) {
+  .message-bubble,
+  .message-row:has(.ai-avatar) .message-bubble,
+  .ai-banner div > span,
+  .ai-banner strong {
+    color: var(--text);
+  }
+}

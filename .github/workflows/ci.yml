@@ -1,0 +1,44 @@
+name: Verify
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: {POSTGRES_USER: supportflow, POSTGRES_PASSWORD: supportflow, POSTGRES_DB: supportflow}
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U supportflow" --health-interval 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://supportflow:supportflow@localhost:5432/supportflow
+      REDIS_URL: redis://localhost:6379
+      AUTH_SECRET: ci-only-random-looking-secret-not-used-in-production
+      VISITOR_JWT_SECRET: ci-only-different-secret-never-used-outside-ci
+      APP_URL: http://localhost:3000
+      REALTIME_URL: http://localhost:3001
+      AI_MODE: mock
+      DEMO_PASSWORD: CI-only-fixture-password-123
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: {version: 11.25.0}
+      - uses: actions/setup-node@v4
+        with: {node-version: 24, cache: pnpm}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm lint && pnpm typecheck && pnpm test
+      - run: pnpm test:integration
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e:live
+      - run: pnpm test:e2e
+      - run: pnpm audit --audit-level high
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: {name: browser-test-results, path: test-results/}

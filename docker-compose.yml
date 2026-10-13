@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: supportflow
+      POSTGRES_PASSWORD: supportflow
+      POSTGRES_DB: supportflow
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U supportflow"]
+      interval: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory-policy noeviction
+    ports: ["127.0.0.1:6379:6379"]
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+  migrate:
+    image: supportflow-app:local
+    build: .
+    command: sh -c "pnpm db:migrate && pnpm db:seed"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://supportflow:supportflow@postgres:5432/supportflow
+    depends_on:
+      postgres: {condition: service_healthy}
+  web:
+    image: supportflow-app:local
+    build: .
+    command: pnpm --filter @supportflow/web start
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://supportflow:supportflow@postgres:5432/supportflow
+      REDIS_URL: redis://redis:6379
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+  realtime:
+    image: supportflow-app:local
+    build: .
+    command: pnpm exec tsx apps/realtime/src/index.ts
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://supportflow:supportflow@postgres:5432/supportflow
+      REDIS_URL: redis://redis:6379
+    ports: ["127.0.0.1:3001:3001"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+  worker:
+    image: supportflow-app:local
+    build: .
+    command: pnpm exec tsx apps/worker/src/index.ts
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://supportflow:supportflow@postgres:5432/supportflow
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+  storefront:
+    image: nginx:alpine
+    ports: ["127.0.0.1:3002:80"]
+    volumes: ["./examples/storefront:/usr/share/nginx/html:ro"]
+volumes:
+  postgres-data:
+  redis-data:

@@ -1,0 +1,11 @@
+{
+  "name": "@supportflow/core",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./service": "./src/service.ts",
+    "./policy": "./src/policy.ts",
+    "./tokens": "./src/tokens.ts",
+    "./ai": "./src/ai.ts"
+  }
+}

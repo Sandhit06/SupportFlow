@@ -1,0 +1,49 @@
+{
+  "name": "supportflow-ai",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "dev": "concurrently -n web,realtime,worker,storefront -c cyan,green,magenta,yellow \"pnpm --filter @supportflow/web dev\" \"tsx watch apps/realtime/src/index.ts\" \"tsx watch apps/worker/src/index.ts\" \"http-server examples/storefront -p 3002 -c-1\"",
+    "dev:web": "pnpm --filter @supportflow/web dev",
+    "build": "pnpm db:generate && pnpm --filter @supportflow/web build",
+    "typecheck": "tsc --noEmit && pnpm --filter @supportflow/web typecheck",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:live": "playwright test --config playwright.live.config.ts",
+    "format": "prettier --write apps packages tests scripts *.ts *.mjs *.json *.yaml",
+    "db:generate": "prisma generate --schema packages/db/prisma/schema.prisma",
+    "db:migrate": "prisma migrate deploy --schema packages/db/prisma/schema.prisma",
+    "db:seed": "tsx packages/db/src/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "argon2": "0.45.1",
+    "bullmq": "6.3.12",
+    "dotenv": "18.0.7",
+    "ioredis": "6.0.0",
+    "jose": "6.2.12",
+    "pino": "10.4.0",
+    "prisma": "^6.19.3",
+    "socket.io": "4.8.4",
+    "socket.io-client": "4.8.4",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.0",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "concurrently": "10.0.6",
+    "eslint": "10.12.0",
+    "http-server": "14.1.1",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.1",
+    "vitest": "5.0.3"
+  }
+}

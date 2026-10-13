@@ -1,0 +1,9 @@
+node_modules
+.next
+.local
+pnpm-lock.yaml
+SupportFlow_AI_README.md
+test-results
+playwright-report
+docs/images
+apps/web/public

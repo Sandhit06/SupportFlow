@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+enum Role {
+  OWNER
+  ADMIN
+  AGENT
+  VIEWER
+}
+enum ConversationStatus {
+  OPEN
+  PENDING
+  RESOLVED
+}
+enum SenderType {
+  VISITOR
+  AGENT
+  AI
+  SYSTEM
+}
+enum ProposalState {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  EXECUTING
+  EXECUTED
+  RETRYABLE_FAILED
+  FAILED
+}
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  email String @unique
+  name String
+  passwordHash String
+  createdAt DateTime @default(now()) @db.Timestamptz
+  memberships Membership[]
+}
+model Organization {
+  id String @id @default(uuid()) @db.Uuid
+  slug String @unique
+  name String
+  aiEnabled Boolean @default(true)
+  adminApproval Boolean @default(true)
+  retentionDays Int @default(90)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  memberships Membership[]
+  installations WidgetInstallation[]
+  visitors Visitor[]
+  articles KnowledgeArticle[]
+}
+model Membership {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  userId String @db.Uuid
+  role Role
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([organizationId, userId])
+}
+model WidgetInstallation {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  publicKey String @unique
+  allowedOrigins String[]
+  active Boolean @default(true)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+model Visitor {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  name String @default("Website visitor")
+  createdAt DateTime @default(now()) @db.Timestamptz
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sessions VisitorSession[]
+  conversations Conversation[]
+  orders ExternalOrder[]
+  @@unique([id, organizationId])
+}
+model VisitorSession {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  visitorId String @db.Uuid
+  expiresAt DateTime @db.Timestamptz
+  revoked Boolean @default(false)
+  refreshTokenHash String? @unique
+  installationId String? @db.Uuid
+  visitor Visitor @relation(fields: [visitorId, organizationId], references: [id, organizationId], onDelete: Cascade)
+}
+model Conversation {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  visitorId String @db.Uuid
+  subject String
+  status ConversationStatus @default(OPEN)
+  assignedUserId String? @db.Uuid
+  aiEnabled Boolean @default(true)
+  version Int @default(1)
+  lastMessageAt DateTime @default(now()) @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  visitor Visitor @relation(fields: [visitorId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  messages Message[]
+  tickets Ticket[]
+  proposals ActionProposal[]
+  @@unique([id, organizationId])
+  @@index([organizationId, status, lastMessageAt])
+  @@index([organizationId, assignedUserId, lastMessageAt])
+}
+model Message {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  conversationId String @db.Uuid
+  senderType SenderType
+  senderId String?
+  body String
+  internal Boolean @default(false)
+  clientMessageId String
+  createdAt DateTime @default(now()) @db.Timestamptz
+  conversation Conversation @relation(fields: [conversationId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  @@unique([conversationId, clientMessageId])
+  @@index([conversationId, createdAt, id])
+}
+model Ticket {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  conversationId String @db.Uuid
+  subject String
+  priority String @default("MEDIUM")
+  status ConversationStatus @default(OPEN)
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  conversation Conversation @relation(fields: [conversationId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  @@index([organizationId, status, updatedAt])
+}
+model KnowledgeArticle {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  title String
+  body String
+  published Boolean @default(false)
+  version Int @default(1)
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId, published])
+}
+model ExternalOrder {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  visitorId String @db.Uuid
+  orderNumber String
+  status String
+  amountCents Int
+  estimatedDelivery String
+  visitor Visitor @relation(fields: [visitorId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  @@unique([organizationId, orderNumber])
+}
+model ActionProposal {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  conversationId String @db.Uuid
+  orderNumber String
+  amountCents Int
+  reason String
+  state ProposalState @default(PENDING)
+  requestedBy String
+  approvedBy String? @db.Uuid
+  expiresAt DateTime @db.Timestamptz
+  idempotencyKey String
+  createdAt DateTime @default(now()) @db.Timestamptz
+  conversation Conversation @relation(fields: [conversationId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, state])
+}
+model SimulatedRefund {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  proposalId String @unique @db.Uuid
+  orderNumber String
+  amountCents Int
+  createdAt DateTime @default(now()) @db.Timestamptz
+}
+model AuditEvent {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  actorId String
+  action String
+  targetId String
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@index([organizationId, createdAt])
+}
+model OutboxEvent {
+  id String @id @default(uuid()) @db.Uuid
+  organizationId String @db.Uuid
+  aggregateId String @db.Uuid
+  eventType String
+  payload Json
+  publishedAt DateTime? @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@index([publishedAt, createdAt])
+}
+model ProcessedJob {
+  id String @id @default(uuid()) @db.Uuid
+  eventId String
+  workerName String
+  processedAt DateTime @default(now()) @db.Timestamptz
+  @@unique([workerName, eventId])
+}
